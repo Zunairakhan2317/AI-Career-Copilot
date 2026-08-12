@@ -1,0 +1,32 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from database import supabase
+
+app = FastAPI(title="AI Career Co-Pilot API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def health_check():
+    return {"status": "Backend Active"}
+
+@app.get("/api/test-db")
+def test_db_connection():
+    try:
+        demo_user = {
+            "email": "demo_test@aicareercopilot.com",
+            "full_name": "Demo Team Member"
+        }
+        response = supabase.table("users").insert(demo_user).execute()
+        return {
+            "status": "Database Connected Successfully!",
+            "inserted_record": response.data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
