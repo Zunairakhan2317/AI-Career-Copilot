@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+supabase
+google-genai
+groq
+python-dotenv
+pydantic
+pdfplumber
+langgraph
