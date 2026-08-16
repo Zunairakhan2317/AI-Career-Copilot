@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routers import roadmap  # Import new roadmap router
 
-app = FastAPI(title="Career Assistant API", version="1.0.0")
+
+app = FastAPI(title="AI Career Co-Pilot API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -11,10 +13,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include the router
+app.include_router(roadmap.router)
+
 
 @app.get("/")
 def read_root():
-    return {"message": "Career Assistant API is running!"}
+    return {"message": "AI Career Co-Pilot API is running!"}
 
 
 @app.get("/health")
