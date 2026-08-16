@@ -2,7 +2,10 @@ fastapi
 uvicorn
 supabase
 python-dotenv
-google-generativeai
+google-genai
 groq
 pdfplumber
+pymupdf
 pydantic
+langgraph
+python-multipart
