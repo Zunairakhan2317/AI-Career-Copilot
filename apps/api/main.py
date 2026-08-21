@@ -1,13 +1,16 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 from database import supabase
-from routers import resume
+from routers import resume, job_match
+
 
 app = FastAPI(
     title="AI Career Co-Pilot API",
     version="1.0.0",
     description="Backend API for AI Career Co-Pilot"
 )
+
 
 # Enable CORS for frontend integration
 app.add_middleware(
@@ -36,19 +39,26 @@ def test_db_connection():
             "email": "demo_test@aicareercopilot.com",
             "full_name": "Demo Team Member"
         }
-        response = supabase.table("users").insert(demo_user).execute()
+
+        response = (
+            supabase
+            .table("users")
+            .insert(demo_user)
+            .execute()
+        )
+
         return {
             "status": "Database Connected Successfully!",
             "inserted_record": response.data
         }
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 
+# Register routers
 app.include_router(resume.router, prefix="/api")
-
-# FOR TEAM: Remaining feature routers will be registered here as they're completed:
-# from routers import roadmap, interview, job_match
-# app.include_router(roadmap.router, prefix="/api")
-# app.include_router(interview.router, prefix="/api")
-# app.include_router(job_match.router, prefix="/api")
+app.include_router(job_match.router, prefix="/api")
