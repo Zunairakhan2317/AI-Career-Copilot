@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import supabase
-from routers import resume, job_match
+# 1. Added 'roadmap' import here
+from routers import resume, job_match, roadmap
 
 
 app = FastAPI(
@@ -62,3 +63,5 @@ def test_db_connection():
 # Register routers
 app.include_router(resume.router, prefix="/api")
 app.include_router(job_match.router, prefix="/api")
+# 2. Registered Task 4 roadmap router here
+app.include_router(roadmap.router, prefix="/api")
