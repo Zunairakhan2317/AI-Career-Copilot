@@ -12,6 +12,7 @@ groq_api_key = os.getenv("GROQ_API_KEY")
 gemini_client = genai.Client(api_key=gemini_api_key) if gemini_api_key else None
 groq_client = Groq(api_key=groq_api_key) if groq_api_key else None
 
+
 def call_llm(prompt: str, provider: str = "gemini", model: str = None) -> str:
     """
     Unified LLM caller for Gemini and Groq.
@@ -19,7 +20,7 @@ def call_llm(prompt: str, provider: str = "gemini", model: str = None) -> str:
     if provider == "gemini":
         if not gemini_client:
             raise ValueError("GEMINI_API_KEY is not set.")
-        model_name = model or "gemini-3.5-flash"
+        model_name = model or "gemini-2.5-flash"
         response = gemini_client.models.generate_content(
             model=model_name,
             contents=prompt,
@@ -38,3 +39,8 @@ def call_llm(prompt: str, provider: str = "gemini", model: str = None) -> str:
 
     else:
         raise ValueError(f"Unsupported provider: {provider}")
+
+
+# Alias exports to bridge differences across team services
+llm_client = gemini_client or groq_client
+generate_llm_response = call_llm
