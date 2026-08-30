@@ -6,6 +6,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 
 from database import supabase
 from services.pipeline import build_resume_graph
+from services.ats_service import generate_tailored_resume, TailorRequest
 
 router = APIRouter(prefix="/resume", tags=["resume"])
 
@@ -75,11 +76,18 @@ def get_resumes(user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# POST /resume/tailor is owned by ats_service.py (Shereen's task) — not built
-# yet, so it isn't wired up here. Once services/ats_service.py exists, add:
-#
-# from services.ats_service import generate_tailored_resume
-#
-# @router.post("/tailor")
-# def tailor_resume(payload: TailorRequest):
-#     return generate_tailored_resume(payload.resume_id, payload.job_description)
+@router.post("/tailor")
+def tailor_resume(payload: TailorRequest):
+    """
+    Generates an ATS-tailored version of a stored resume against a given
+    job description. Logic lives in services/ats_service.py.
+    """
+    try:
+        return generate_tailored_resume(payload.resume_id, payload.job_description)
+    except HTTPException:
+        # Already a proper HTTPException (e.g. 404 resume not found,
+        # 400 empty job description) raised inside ats_service — let its
+        # original status code/detail pass through instead of masking it as 500.
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

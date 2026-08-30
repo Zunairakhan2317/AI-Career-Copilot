@@ -36,8 +36,28 @@ def health_check():
 @app.get("/api/test-db")
 def test_db_connection():
     try:
+        demo_email = "demo_test@aicareercopilot.com"
+
+        # Check if the demo user already exists before inserting, so repeated
+        # calls to this test endpoint don't hit the users_email_key unique
+        # constraint.
+        existing = (
+            supabase
+            .table("users")
+            .select("*")
+            .eq("email", demo_email)
+            .limit(1)
+            .execute()
+        )
+
+        if existing.data:
+            return {
+                "status": "Database Connected Successfully! (demo user already existed)",
+                "inserted_record": existing.data
+            }
+
         demo_user = {
-            "email": "demo_test@aicareercopilot.com",
+            "email": demo_email,
             "full_name": "Demo Team Member"
         }
 

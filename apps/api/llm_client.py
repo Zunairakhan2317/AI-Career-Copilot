@@ -20,7 +20,9 @@ def call_llm(prompt: str, provider: str = "gemini", model: str = None) -> str:
     if provider == "gemini":
         if not gemini_client:
             raise ValueError("GEMINI_API_KEY is not set.")
-        model_name = model or "gemini-2.5-flash"
+        # gemini-2.5-flash was deprecated by Google (shutting down Oct 2026);
+        # gemini-3.6-flash is the current stable replacement.
+        model_name = model or "gemini-3.6-flash"
         response = gemini_client.models.generate_content(
             model=model_name,
             contents=prompt,
