@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  /* Frosted Play Theme Palette */
+  --background: 220 30% 96%;           /* Soft pastel backdrop */
+  --foreground: 222 47% 11%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+
+  --primary: 38 92% 50%;               /* Amber #F59E0B */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 172 80% 40%;             /* Teal #14B8A6 */
+  --secondary-foreground: 0 0% 100%;
+
+  --tertiary: 271 91% 65%;              /* Purple #A855F7 */
+  --tertiary-foreground: 0 0% 100%;
+
+  --muted: 215 20% 93%;                 /* Light frosted input bg */
+  --muted-foreground: 215 16% 47%;       /* Neutral #94A3B8 */
+
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 271 91% 65%;                  /* Purple focus ring */
+}
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-tertiary: hsl(var(--tertiary));
+  --color-tertiary-foreground: hsl(var(--tertiary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
