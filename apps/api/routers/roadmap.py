@@ -5,7 +5,7 @@ from services.roadmap_service import (
     get_roadmap_by_user,
 )
 
-router = APIRouter(prefix="/api/roadmap", tags=["Roadmap"])
+router = APIRouter(prefix="/roadmap", tags=["Roadmap"])
 
 
 class RoadmapRequest(BaseModel):
