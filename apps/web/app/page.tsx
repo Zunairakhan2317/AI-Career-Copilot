@@ -1,6 +1,25 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export default function RootPage() {
-  // Redirects http://localhost:3000 directly to http://localhost:3000/login
-  redirect("/login");
+  const router = useRouter();
+  const { user, isHydrated } = useAuth();
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (user) {
+      router.replace("/dashboard");
+    } else {
+      router.replace("/login");
+    }
+  }, [user, isHydrated, router]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+      Loading…
+    </div>
+  );
 }

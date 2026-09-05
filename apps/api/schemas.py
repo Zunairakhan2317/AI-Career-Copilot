@@ -1,11 +1,31 @@
 """
-Pydantic schemas for the Resume Ingestion pipeline:
-Parse Node -> Validate Node -> Enrich & Store Node
+Pydantic schemas for the Resume Ingestion pipeline & Authentication
 """
 
 from __future__ import annotations
 from typing import Optional, Literal
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, EmailStr
+
+
+# ---------------------------------------------------------------------------
+# Authentication Schemas
+# ---------------------------------------------------------------------------
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user_id: str
+    email: str
+    full_name: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +113,7 @@ class ResumePipelineState(BaseModel):
     # inputs
     file_path: str
     user_id: str
+    job_description: Optional[str] = None
 
     # Parse Node output
     raw_text: Optional[str] = None
@@ -109,5 +130,86 @@ class ResumePipelineState(BaseModel):
     stored: bool = False
     store_error: Optional[str] = None
 
+    # Analyze JD Node output
+    jd_analysis: Optional[dict] = None
+
     class Config:
         arbitrary_types_allowed = True
+
+class JobDescriptionRequest(BaseModel):
+    raw_text: str
+
+class ResumeJdAnalysisRow(BaseModel):
+    user_id: str
+    resume_id: str
+    jd_id: str
+    analysis_json: dict
+
+
+# ---------------------------------------------------------------------------
+# ATS Tailoring Schemas
+# ---------------------------------------------------------------------------
+
+class TailorRequest(BaseModel):
+    resume_id: str
+    user_id: str
+    job_description: str
+
+
+class TailoredExperienceEntry(BaseModel):
+    original_title: str
+    company: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    is_current: bool = False
+    rewritten_bullets: list[str] = Field(default_factory=list)
+
+
+class TailoredResumeContent(BaseModel):
+    rewritten_summary: str
+    experience: list[TailoredExperienceEntry] = Field(default_factory=list)
+    skills_to_emphasize: list[str] = Field(default_factory=list)
+    keywords_added: list[str] = Field(default_factory=list)
+    ats_match_estimate: Optional[int] = None
+
+
+# ---------------------------------------------------------------------------
+# Mock Interview Schemas
+# ---------------------------------------------------------------------------
+
+class InterviewStartRequest(BaseModel):
+    user_id: str
+    resume_id: Optional[str] = None
+    job_description: str
+    target_role: Optional[str] = None
+    total_questions: int = 5
+
+
+class InterviewMessageRequest(BaseModel):
+    session_id: str
+    user_id: str
+    user_message: str
+
+
+class InterviewEndRequest(BaseModel):
+    session_id: str
+    user_id: str
+
+
+class ChatTurn(BaseModel):
+    role: Literal["assistant", "user"]
+    content: str
+    timestamp: Optional[str] = None
+    question_type: Optional[Literal["technical", "behavioral", "intro", "followup"]] = None
+
+
+class InterviewScorecard(BaseModel):
+    overall_score: int = Field(ge=0, le=100)
+    technical_knowledge: int = Field(ge=0, le=100)
+    communication: int = Field(ge=0, le=100)
+    confidence: int = Field(ge=0, le=100)
+    problem_solving: int = Field(ge=0, le=100)
+    strengths: list[str] = Field(default_factory=list)
+    improvements: list[str] = Field(default_factory=list)
+    per_question_feedback: list[dict] = Field(default_factory=list)
+    recommendation: str = ""

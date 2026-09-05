@@ -1,3 +1,4 @@
+# Frontend (apps/web/package.json) adds: framer-motion
 fastapi
 uvicorn
 supabase
@@ -9,3 +10,7 @@ pymupdf
 pydantic
 langgraph
 python-multipart
+passlib
+bcrypt
+PyJWT
+python-docx

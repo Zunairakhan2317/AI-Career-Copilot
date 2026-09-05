@@ -34,15 +34,19 @@ def generate_roadmap_for_user(user_id: str, target_role: str):
     }}
     """
 
-    # 3. Call LLM
-    llm_raw_output = generate_llm_response(prompt)
+    # 3. Call LLM (use provider="auto" -> Groq preferred, Gemini fallback)
+    llm_raw_output = generate_llm_response(prompt, provider="auto")
 
     try:
         roadmap_json = json.loads(llm_raw_output)
     except json.JSONDecodeError:
         roadmap_json = {"raw_output": llm_raw_output}
 
-    # 4. Save to Supabase 'learning_roadmaps' table
+    # 4. Ensure completed_milestones array exists (Option A — store inside roadmap_data jsonb)
+    if "completed_milestones" not in roadmap_json:
+        roadmap_json["completed_milestones"] = []
+
+    # 5. Save to Supabase 'learning_roadmaps' table
     data_to_insert = {
         "user_id": user_id,
         "target_role": target_role,
@@ -61,6 +65,47 @@ def get_roadmap_by_user(user_id: str):
         supabase.table("learning_roadmaps")
         .select("*")
         .eq("user_id", user_id)
+        .order("created_at", desc=True)
         .execute()
     )
     return response.data
+
+
+def get_roadmap_by_id(roadmap_id: str, user_id: str):
+    """Fetch a single roadmap, scoped to the user (security check)."""
+    response = (
+        supabase.table("learning_roadmaps")
+        .select("*")
+        .eq("id", roadmap_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    return response.data[0] if response.data else None
+
+
+def update_completed_milestones(roadmap_id: str, completed_milestones: list[int]):
+    """
+    PATCH endpoint helper — merge the new completed_milestones list
+    into the existing roadmap_data jsonb column (Option A).
+    """
+    # 1. Fetch current roadmap_data
+    response = (
+        supabase.table("learning_roadmaps")
+        .select("roadmap_data")
+        .eq("id", roadmap_id)
+        .execute()
+    )
+    if not response.data:
+        return None
+
+    current_data = response.data[0].get("roadmap_data") or {}
+    current_data["completed_milestones"] = list(completed_milestones)
+
+    # 2. Write back
+    update_response = (
+        supabase.table("learning_roadmaps")
+        .update({"roadmap_data": current_data})
+        .eq("id", roadmap_id)
+        .execute()
+    )
+    return update_response.data[0] if update_response.data else None

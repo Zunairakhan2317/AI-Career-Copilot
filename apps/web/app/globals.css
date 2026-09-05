@@ -50,3 +50,62 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
 }
+
+/* ---------------------------------------------------------------------------
+   Custom keyframes & utility classes for ambient motion.
+   Respects prefers-reduced-motion via the media query at the bottom.
+   --------------------------------------------------------------------------- */
+
+@layer utilities {
+  /* Skeleton shimmer for loading states */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.4) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  /* Slow pulsing ring for the resume upload dropzone */
+  @keyframes pulse-ring {
+    0%, 100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 8px hsl(var(--primary) / 0);
+    }
+  }
+  .animate-pulse-ring {
+    animation: pulse-ring 2.2s ease-in-out infinite;
+  }
+
+  /* Subtle gradient shift for hero / placeholder cards */
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  .animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 6s ease-in-out infinite;
+  }
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  .animate-pulse-ring,
+  .animate-gradient-shift {
+    animation: none !important;
+  }
+}
