@@ -1,0 +1,16 @@
+# Frontend (apps/web/package.json) adds: framer-motion
+fastapi
+uvicorn
+supabase
+python-dotenv
+google-genai
+groq
+pdfplumber
+pymupdf
+pydantic
+langgraph
+python-multipart
+passlib
+bcrypt
+PyJWT
+python-docx

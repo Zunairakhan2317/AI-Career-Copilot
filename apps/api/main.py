@@ -1,0 +1,110 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from database import supabase
+from routers import resume, job_match, roadmap, auth, interview
+
+
+app = FastAPI(
+    title="AI Career Co-Pilot API",
+    version="1.0.0",
+    description="Backend API for AI Career Co-Pilot"
+)
+
+
+# Enable CORS for frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def read_root():
+    return {"message": "AI Career Co-Pilot API is running!"}
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "Backend Active"}
+
+
+@app.get("/v1/models")
+def list_models():
+    """
+    OpenAI-compatible endpoint to list available models.
+    This app uses Groq and Gemini, so we return the compatible models
+    that the LLM client can work with.
+    """
+    return {
+        "data": [
+            {
+                "id": "groq-llama-3.1-8b-instant",
+                "object": "model",
+                "created": 1725158400,
+                "owned_by": "ai-career-copilot",
+            },
+            {
+                "id": "groq-llama-3.3-70b-versatile",
+                "object": "model",
+                "created": 1725158400,
+                "owned_by": "ai-career-copilot",
+            },
+            {
+                "id": "groq-llama-3.1-70b-versatile",
+                "object": "model",
+                "created": 1725158400,
+                "owned_by": "ai-career-copilot",
+            },
+            {
+                "id": "gemini-2.5-flash",
+                "object": "model",
+                "created": 1725158400,
+                "owned_by": "ai-career-copilot",
+            },
+            {
+                "id": "gemini-2.5-flash-lite",
+                "object": "model",
+                "created": 1725158400,
+                "owned_by": "ai-career-copilot",
+            },
+        ]
+    }
+
+
+@app.get("/api/test-db")
+def test_db_connection():
+    try:
+        demo_user = {
+            "email": "demo_test@aicareercopilot.com",
+            "full_name": "Demo Team Member"
+        }
+
+        response = (
+            supabase
+            .table("users")
+            .insert(demo_user)
+            .execute()
+        )
+
+        return {
+            "status": "Database Connected Successfully!",
+            "inserted_record": response.data
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# Register routers
+app.include_router(auth.router, prefix="/api")
+app.include_router(resume.router, prefix="/api")
+app.include_router(job_match.router, prefix="/api")
+app.include_router(roadmap.router, prefix="/api")
+app.include_router(interview.router, prefix="/api")
