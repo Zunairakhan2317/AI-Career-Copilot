@@ -1,36 +1,152 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend (Next.js)
 
-## Getting Started
+The AI Career Co-Pilot web application is a Next.js 16 (App Router) frontend built with React 19 and Tailwind CSS v4. It provides the user interface for resume optimization, job matching, interview preparation, and career planning.
 
-First, run the development server:
+## Features
+
+- **Dashboard** — Overview of career progress and resume statistics
+- **Resume Management** — Upload, view, and manage parsed resumes
+- **ATS Tailoring** — Tailor resumes for specific job descriptions with live preview
+- **Job Matching** — Match resumes against job descriptions with AI scoring
+- **Interview Prep** — Conduct mock interviews with AI interviewer
+- **Roadmap** — Track career progression milestones
+- **Authentication** — Sign up, sign in, and session management
+- **Responsive UI** — Mobile navigation with bottom nav bar
+
+## Quick Start
 
 ```bash
+cd apps/web
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env
+# Add your environment variables
+```
 
-## Learn More
+### Required Variables
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous client key |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+apps/web/
+├── app/                     # Next.js App Router
+│   ├── layout.tsx           # Root layout
+│   ├── page.tsx             # Landing page
+│   ├── (app)/               # Authenticated app layout
+│   │   ├── layout.tsx       # App shell (Sidebar + BottomNav)
+│   │   ├── dashboard/page.tsx
+│   │   ├── resume/page.tsx
+│   │   ├── resume/tailor/page.tsx
+│   │   ├── jobs/page.tsx
+│   │   ├── interview/page.tsx
+│   │   ├── roadmap/page.tsx
+│   │   └── profile/page.tsx
+│   ├── login/page.tsx
+│   └── signup/page.tsx
+├── components/
+│   ├── Sidebar.tsx          # Desktop navigation
+│   ├── Navbar.tsx           # Top bar
+│   ├── BottomNav.tsx        # Mobile bottom navigation
+│   ├── motion/              # Page transition animations
+│   │   ├── PageTransition.tsx
+│   │   ├── StaggerContainer.tsx
+│   │   └── StaggerItem.tsx
+│   └── ui/                  # shadcn/ui components
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── input.tsx
+│       ├── badge.tsx
+│       ├── progress.tsx
+│       ├── dialog.tsx
+│       ├── motion-button.tsx
+│       └── motion-card.tsx
+├── lib/
+│   └── auth-context.tsx     # Authentication context provider
+├── next.config.ts           # Next.js configuration
+├── postcss.config.mjs       # Tailwind CSS config
+├── tsconfig.json            # TypeScript config
+└── package.json             # Dependencies
+```
 
-## Deploy on Vercel
+## Pages
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Route | Description |
+|---|---|
+| `/` | Landing page |
+| `/login` | Sign in |
+| `/signup` | Create account |
+| `/dashboard` | Career overview |
+| `/resume` | Manage resumes |
+| `/resume/tailor` | ATS tailoring workspace |
+| `/jobs` | Job matching |
+| `/interview` | Mock interview |
+| `/roadmap` | Career roadmap |
+| `/profile` | User profile |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Styling
+
+- **Tailwind CSS v4** with `@tailwindcss/postcss`
+- **shadcn/ui** component library
+- **class-variance-authority** for variant management
+- **clsx** + **tailwind-merge** for conditional classes
+- **framer-motion** for animations (page transitions, staggered lists)
+
+## Authentication
+
+The frontend uses a React context (`lib/auth-context.tsx`) to manage user sessions. JWT tokens are stored client-side and attached to API requests. The auth context provides:
+
+- `user` — Current authenticated user
+- `login()` / `signup()` — Auth actions
+- `logout()` — Session termination
+- `isAuthenticated` — Auth state
+
+## API Integration
+
+The frontend communicates with the FastAPI backend at `http://localhost:8000`. Key endpoints:
+
+- `POST /api/auth/login`, `POST /api/auth/signup`
+- `POST /api/resume/upload`, `GET /api/resume/{user_id}`, `POST /api/resume/tailor`
+- `POST /api/job-match/`
+- `POST /api/interview/start`, `POST /api/interview/message`, `POST /api/interview/end`
+- `GET /api/roadmap`
+
+## Scripts
+
+| Script | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Build production bundle |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+
+## TypeScript
+
+All source files are TypeScript with strict mode enabled. See `tsconfig.json` for configuration.
+
+## Deployment
+
+```bash
+npm run build
+npm start
+```
+
+Deploy to Vercel:
+```bash
+vercel --prod
+```
+
+## License
+
+MIT

@@ -19,7 +19,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
 import { resumeApi } from "@/lib/api";
-import { pageVariants, containerVariants, cardVariants, hoverLift, tapScale, fadeInVariants } from "@/lib/motion";
+import { pageVariants, cardVariants, hoverLift, tapScale, fadeInVariants } from "@/lib/motion";
 
 interface StoredResume {
   id: string;
@@ -47,9 +47,12 @@ interface TailorResult {
     skills_to_emphasize: string[];
     keywords_added: string[];
     ats_match_estimate: number | null;
+    cover_letter_outline: string;
   };
   docx_base64: string;
   docx_filename: string;
+  cover_letter_docx_base64: string | null;
+  cover_letter_docx_filename: string | null;
 }
 
 function TailorPageInner() {
@@ -157,6 +160,33 @@ function TailorPageInner() {
       URL.revokeObjectURL(url);
     } catch (err) {
       setError("Failed to download .docx file.");
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Download cover letter .docx
+  // -------------------------------------------------------------------------
+  const handleDownloadCoverLetter = () => {
+    if (!result?.cover_letter_docx_base64 || !result?.cover_letter_docx_filename) return;
+    try {
+      const binary = atob(result.cover_letter_docx_base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.cover_letter_docx_filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError("Failed to download cover letter.");
     }
   };
 
@@ -328,7 +358,7 @@ function TailorPageInner() {
             </motion.div>
           </div>
 
-          {/* Two side-by-side panels: Summary + Preview */}
+          {/* Row 1: Two side-by-side panels: AI Rewritten Content + Cover Letter Outline */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Left: Rewritten Summary + Keywords */}
             <Card className="bg-card border-border/60 rounded-3xl p-5 space-y-4">
@@ -380,27 +410,42 @@ function TailorPageInner() {
               )}
             </Card>
 
-            {/* Right: Resume Preview */}
-            <Card className="bg-card border-border/60 rounded-3xl p-5 space-y-3">
-              <h3 className="font-bold text-base text-foreground flex items-center gap-2">
-                <FileText className="h-4 w-4 text-secondary" />
-                Resume Preview
-              </h3>
-              <div className="space-y-3 text-sm">
-                {selectedResume?.parsed_data?.contact?.full_name && (
-                  <div className="text-center pb-2 border-b border-border/40">
-                    <p className="font-bold text-foreground text-base">
-                      {selectedResume.parsed_data.contact.full_name}
-                    </p>
-                  </div>
-                )}
+            {/* Right: Cover Letter Outline */}
+            {result.tailored.cover_letter_outline && (
+              <Card className="bg-card border-border/60 rounded-3xl p-5 space-y-3">
+                <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-tertiary" />
+                  Cover Letter Outline
+                </h3>
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                  {result.tailored.cover_letter_outline}
+                </p>
+              </Card>
+            )}
+          </div>
 
-                {result.tailored.experience.length === 0 && (
-                  <p className="text-sm text-muted-foreground italic">
-                    No experience entries were rewritten.
+          {/* Row 2: Resume Preview — full width */}
+          <Card className="bg-card border-border/60 rounded-3xl p-5 space-y-3">
+            <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+              <FileText className="h-4 w-4 text-secondary" />
+              Resume Preview
+            </h3>
+            <div className="space-y-3 text-sm">
+              {selectedResume?.parsed_data?.contact?.full_name && (
+                <div className="text-center pb-2 border-b border-border/40">
+                  <p className="font-bold text-foreground text-base">
+                    {selectedResume.parsed_data.contact.full_name}
                   </p>
-                )}
+                </div>
+              )}
 
+              {result.tailored.experience.length === 0 && (
+                <p className="text-sm text-muted-foreground italic">
+                  No experience entries were rewritten.
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {result.tailored.experience.map((exp, idx) => {
                   const isExpanded = expandedIdx === idx;
                   return (
@@ -442,18 +487,27 @@ function TailorPageInner() {
                   );
                 })}
               </div>
-            </Card>
-          </div>
+            </div>
+          </Card>
 
-          {/* Export DOCX button (the prominent CTA from the design) */}
-          <motion.div whileHover={hoverLift} whileTap={tapScale} className="flex justify-center pt-2">
+          {/* Export DOCX buttons */}
+          <motion.div whileHover={hoverLift} whileTap={tapScale} className="flex justify-center gap-4 pt-2">
             <Button
               onClick={handleDownload}
               className="h-12 px-8 bg-tertiary hover:opacity-90 text-tertiary-foreground font-bold rounded-2xl shadow-lg shadow-tertiary/25 flex items-center gap-2"
             >
               <Download className="h-5 w-5" />
-              Export DOCX
+              Export Resume DOCX
             </Button>
+            {result.cover_letter_docx_base64 && (
+              <Button
+                onClick={handleDownloadCoverLetter}
+                className="h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-2xl shadow-lg shadow-primary/25 flex items-center gap-2"
+              >
+                <Download className="h-5 w-5" />
+                Export Cover Letter DOCX
+              </Button>
+            )}
           </motion.div>
         </motion.div>
       )}

@@ -7,6 +7,7 @@ JSON (for the frontend preview) and a .docx file (for download).
 """
 
 from __future__ import annotations
+import base64
 import io
 import json
 import re
@@ -49,10 +50,12 @@ def generate_tailored_resume(resume_id: str, user_id: str, job_description: str)
         raise ValueError("Resume exists but contains no parsed data.")
 
     # 1. Build the LLM prompt
-    prompt = f"""You are an expert resume writer specializing in ATS-optimized resumes.
+    prompt = f"""You are an expert resume writer specializing in ATS-optimized resumes AND cover letter writing.
 
 Given the candidate's parsed resume and a target job description, rewrite the
-candidate's experience bullet points to maximize ATS match for the role.
+candidate's experience bullet points to maximize ATS match for the role,
+AND write a tailored cover letter that highlights the most relevant skills
+and experiences for this specific role.
 
 Resume (JSON):
 {json.dumps(parsed, indent=2)}
@@ -78,7 +81,8 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no comme
   ],
   "skills_to_emphasize": ["skill1", "skill2"],
   "keywords_added": ["keyword1", "keyword2"],
-  "ats_match_estimate": 0-100
+  "ats_match_estimate": 0-100,
+  "cover_letter_outline": "A 3-4 paragraph cover letter: 1) Opening expressing interest in the role, 2) Summary of 2-3 most relevant qualifications with specific examples from the resume, 3) Closing with a call to action and enthusiasm for an interview. Keep it professional and concise."
 }}
 
 RULES:
@@ -108,16 +112,25 @@ RULES:
     if "rewritten_summary" not in tailored or "experience" not in tailored:
         raise RuntimeError("LLM response missing required fields.")
 
-    # 5. Generate the .docx file
+    # 5. Generate the .docx file for resume
     docx_bytes = build_docx(parsed, tailored)
 
-    import base64
+    # 6. Generate the cover letter docx if outline was provided
+    cover_letter_docx_base64 = None
+    cover_letter_docx_filename = None
+    if tailored.get("cover_letter_outline"):
+        cover_letter_docx_bytes = build_cover_letter_docx(parsed, tailored)
+        cover_letter_docx_base64 = base64.b64encode(cover_letter_docx_bytes).decode("utf-8")
+        cover_letter_docx_filename = f"cover_letter_{resume_id[:8]}.docx"
+
     return {
         "resume_id": resume_id,
         "target_role": tailored.get("rewritten_summary", "")[:80],
         "tailored": tailored,
         "docx_base64": base64.b64encode(docx_bytes).decode("utf-8"),
         "docx_filename": f"tailored_resume_{resume_id[:8]}.docx",
+        "cover_letter_docx_base64": cover_letter_docx_base64,
+        "cover_letter_docx_filename": cover_letter_docx_filename,
     }
 
 
@@ -277,6 +290,110 @@ def build_docx(parsed: dict, tailored: dict) -> bytes:
         hr.font.size = Pt(12)
         for c in certs:
             doc.add_paragraph(c, style="List Bullet")
+
+    # --- Save to bytes ---
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+def build_cover_letter_docx(parsed: dict, tailored: dict) -> bytes:
+    """
+    Build a .docx file for the cover letter.
+    Layout: Header → Greeting → Body → Closing.
+    """
+    doc = Document()
+
+    # Set base style
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(11)
+
+    # Margins
+    for section in doc.sections:
+        section.left_margin = Inches(1.0)
+        section.right_margin = Inches(1.0)
+        section.top_margin = Inches(1.0)
+        section.bottom_margin = Inches(1.0)
+
+    contact = parsed.get("contact") or {}
+
+    # --- Header: Name + Contact ---
+    name = contact.get("full_name") or "Your Name"
+    name_para = doc.add_paragraph()
+    name_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    name_run = name_para.add_run(name)
+    name_run.bold = True
+    name_run.font.size = Pt(14)
+
+    contact_parts = []
+    if contact.get("email"):
+        contact_parts.append(contact["email"])
+    if contact.get("phone"):
+        contact_parts.append(contact["phone"])
+    if contact.get("location"):
+        contact_parts.append(contact["location"])
+
+    for part in contact_parts:
+        p = doc.add_paragraph(part)
+        p.paragraph_format.space_after = Pt(0)
+        p.runs[0].font.size = Pt(10)
+
+    doc.add_paragraph()  # Spacer
+
+    # --- Date ---
+    from datetime import date
+    date_para = doc.add_paragraph(date.today().strftime("%B %d, %Y"))
+    date_para.runs[0].font.size = Pt(11)
+    doc.add_paragraph()  # Spacer
+
+    # --- Cover Letter Title ---
+    target_role = tailored.get("rewritten_summary", "")[:80] or "Position"
+    title_para = doc.add_paragraph()
+    title_run = title_para.add_run("Re: Application for ")
+    title_run.font.size = Pt(11)
+    role_run = title_para.add_run(target_role)
+    role_run.bold = True
+    role_run.font.size = Pt(11)
+    doc.add_paragraph()  # Spacer
+
+    # --- Cover Letter Body ---
+    cover_letter = tailored.get("cover_letter_outline") or ""
+    if cover_letter:
+        # Split by double newlines to get paragraphs
+        paragraphs = cover_letter.split("\n\n")
+        for para_text in paragraphs:
+            para_text = para_text.strip()
+            if not para_text:
+                continue
+            # Check if it's a greeting
+            if para_text.lower().startswith("dear ") or para_text.lower().startswith("hello "):
+                p = doc.add_paragraph(para_text)
+                p.paragraph_format.space_after = Pt(12)
+            elif para_text.lower().startswith("sincerely") or para_text.lower().startswith("best regards") or para_text.lower().startswith("regards"):
+                p = doc.add_paragraph(para_text)
+                p.paragraph_format.space_before = Pt(12)
+            else:
+                p = doc.add_paragraph(para_text)
+                p.paragraph_format.space_after = Pt(12)
+    else:
+        # Fallback: generic cover letter template
+        p = doc.add_paragraph("I am writing to express my strong interest in the position.")
+        p.paragraph_format.space_after = Pt(12)
+        p = doc.add_paragraph(
+            "With my background in technology and proven track record of delivering results, "
+            "I believe I would be a valuable addition to your team."
+        )
+        p.paragraph_format.space_after = Pt(12)
+
+    doc.add_paragraph()  # Spacer before signature
+
+    # --- Signature ---
+    sig_para = doc.add_paragraph("Sincerely,")
+    sig_para.paragraph_format.space_after = Pt(24)
+    sig_name = doc.add_paragraph(name)
+    sig_name.runs[0].bold = True
 
     # --- Save to bytes ---
     buf = io.BytesIO()
